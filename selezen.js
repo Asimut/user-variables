@@ -1,4 +1,3 @@
-// ===== СИСТЕМА ЗАМЕНЫ ПОЛЬЗОВАТЕЛЬСКИХ ПЕРЕМЕННЫХ В RISE =====
 window.UserVariables = {
   initialized: false,
   data: {},
