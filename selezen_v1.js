@@ -1,3 +1,4 @@
+// ===== СИСТЕМА ЗАМІНИ КОРИСТУВАЦЬКИХ ЗМІННИХ У RISE =====
 window.UserVariables = {
   initialized: false,
   data: {},
@@ -7,22 +8,22 @@ window.UserVariables = {
     if (this.initialized) return;
     this.initialized = true;
     
-    console.log('[UserVariables] Инициализация...');
+    console.log('[UserVariables] Ініціалізація...');
     
-    // Инициализируем получение данных SCORM
+    // Ініціалізуємо отримання даних SCORM
     this.fetchUserData()
       .then(() => {
-        console.log('[UserVariables] Данные пользователя загружены:', this.data);
+        console.log('[UserVariables] Дані користувача завантажені:', this.data);
         this.ready = true;
         
-        // Запускаем наблюдение за DOM
+        // Запускаємо спостереження за DOM
         this.startObserver();
         
-        // Запускаем обработчик для Rise
+        // Запускаємо обробник для Rise
         this.initRiseSpecific();
       })
       .catch(error => {
-        console.error('[UserVariables] Ошибка загрузки данных:', error);
+        console.error('[UserVariables] Помилка завантаження даних:', error);
       });
   },
   
@@ -37,7 +38,7 @@ window.UserVariables = {
     try {
       const lmsAPI = this.findLMSAPI(window);
       if (!lmsAPI) {
-        console.error("[UserVariables] LMS API не найден");
+        console.error("[UserVariables] LMS API не знайдено");
         return null;
       }
       
@@ -54,43 +55,43 @@ window.UserVariables = {
       
       return value;
     } catch (error) {
-      console.error(`[UserVariables] Ошибка получения ${element}:`, error);
+      console.error(`[UserVariables] Помилка отримання ${element}:`, error);
       return null;
     }
   },
   
   async fetchUserData() {
     try {
-      // Получаем информацию о пользователе из SCORM
+      // Отримуємо інформацію про користувача зі SCORM
       let studentInfo = await this.getSCORMValue("cmi.core.student_info");
       
-      // Если не получили через cmi.core.student_info, пробуем другие варианты
+      // Якщо не отримали через cmi.core.student_info, пробуємо інші варіанти
       if (!studentInfo) {
         studentInfo = await this.getSCORMValue("cmi.suspend_data");
       }
       
-      // Если данные получены, пытаемся их распарсить
+      // Якщо дані отримано, намагаємося їх розпарсити
       if (studentInfo) {
         try {
-          // Если данные в JSON формате
+          // Якщо дані у форматі JSON
           if (typeof studentInfo === 'string' && (studentInfo.startsWith('{') || studentInfo.startsWith('['))) {
             this.data = JSON.parse(studentInfo);
           } else {
             this.data = studentInfo;
           }
         } catch (parseError) {
-          console.error("[UserVariables] Ошибка парсинга данных:", parseError);
-          this.data = { error: "Ошибка парсинга данных пользователя" };
+          console.error("[UserVariables] Помилка парсингу даних:", parseError);
+          this.data = { error: "Помилка парсингу даних користувача" };
         }
       } else {
-        // Если не получили данные, заполняем базовые поля
+        // Якщо не отримали дані, заповнюємо базові поля
         this.data = {
           firstname: await this.getSCORMValue("cmi.core.student_name") || "Студент",
           fullname: await this.getSCORMValue("cmi.core.student_name") || "Студент"
         };
       }
       
-      // Делаем дополнительную проверку формата имени
+      // Додаткова перевірка формату імені
       if (this.data.fullname && !this.data.firstname) {
         const nameParts = this.data.fullname.split(' ');
         if (nameParts.length > 0) {
@@ -98,37 +99,37 @@ window.UserVariables = {
         }
       }
       
-      console.log("[UserVariables] Загружены данные:", this.data);
+      console.log("[UserVariables] Дані завантажено:", this.data);
     } catch (error) {
-      console.error("[UserVariables] Ошибка получения данных:", error);
-      this.data = { error: "Ошибка получения данных пользователя" };
+      console.error("[UserVariables] Помилка отримання даних:", error);
+      this.data = { error: "Помилка отримання даних користувача" };
     }
   },
   
   initRiseSpecific() {
-    // Находим и обрабатываем специфичные элементы Rise
+    // Знаходимо й обробляємо специфічні елементи Rise
     this.processRiseElements();
     
-    // Отслеживаем изменения маршрута в Rise (загрузка новых страниц)
+    // Відстежуємо зміни маршруту в Rise (завантаження нових сторінок)
     this.monitorRiseRouteChanges();
     
-    // Проверяем iframe с контентом Rise
+    // Перевіряємо iframe із контентом Rise
     this.processRiseContentIframes();
   },
   
   processRiseElements() {
-    // Rise хранит содержимое страницы в #app
+    // Rise зберігає вміст сторінки в #app
     const appElement = document.getElementById('app');
     if (appElement) {
       this.processTextNodes(appElement);
       
-      // Rise часто использует блоки с rich-text-content
+      // Rise часто використовує блоки з rich-text-content
       const richTextElements = document.querySelectorAll('.rich-text-content, .text-block');
       richTextElements.forEach(element => {
         this.processTextNodes(element);
       });
       
-      // Обрабатываем заголовки
+      // Обробляємо заголовки
       const headingElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, .heading');
       headingElements.forEach(element => {
         this.processTextNodes(element);
@@ -137,16 +138,16 @@ window.UserVariables = {
   },
   
   monitorRiseRouteChanges() {
-    // Rise использует SPA-подход, отслеживаем изменение URL
+    // Rise використовує SPA‑підхід, відстежуємо зміну URL
     let lastUrl = location.href;
     
-    // Периодически проверяем изменения URL
+    // Періодично перевіряємо зміни URL
     const checkUrlChange = () => {
       if (location.href !== lastUrl) {
         lastUrl = location.href;
-        console.log('[UserVariables] Обнаружено изменение маршрута Rise:', lastUrl);
+        console.log('[UserVariables] Виявлено зміну маршруту Rise:', lastUrl);
         
-        // Даем небольшую задержку для загрузки нового контента
+        // Даємо невелику затримку для завантаження нового контенту
         setTimeout(() => {
           this.processRiseElements();
           this.processRiseContentIframes();
@@ -154,20 +155,20 @@ window.UserVariables = {
       }
     };
     
-    // Запускаем периодическую проверку URL
+    // Запускаємо періодичну перевірку URL
     setInterval(checkUrlChange, 200);
     
-    // Также пробуем перехватить события навигации Rise
+    // Також пробуємо перехопити події навігації Rise
     if (window.Rise) {
-      console.log('[UserVariables] Обнаружен глобальный объект Rise, устанавливаем перехватчики');
+      console.log('[UserVariables] Виявлено глобальний об’єкт Rise, встановлюємо перехоплювачі');
       
-      // Перехватываем методы навигации, если они существуют
+      // Перехоплюємо методи навігації, якщо вони існують
       if (window.Rise.navigate) {
         const originalNavigate = window.Rise.navigate;
         window.Rise.navigate = (...args) => {
           const result = originalNavigate.apply(window.Rise, args);
           
-          // После навигации обрабатываем новый контент
+          // Після навігації обробляємо новий контент
           setTimeout(() => {
             this.processRiseElements();
           }, 300);
@@ -179,22 +180,22 @@ window.UserVariables = {
   },
   
   processRiseContentIframes() {
-    // Rise часто загружает контент в iframe
+    // Rise часто завантажує контент в iframe
     const iframes = document.querySelectorAll('iframe');
     
     iframes.forEach(iframe => {
       try {
-        // Ждем полной загрузки iframe
+        // Чекаємо повного завантаження iframe
         const processIframe = () => {
           if (iframe.contentDocument) {
-            // Передаем данные пользователя в iframe
+            // Передаємо дані користувача в iframe
             iframe.contentWindow.UserVariables = {
               data: this.data,
               ready: true,
               processTextNodes: this.processTextNodes
             };
             
-            // Обрабатываем текст в iframe
+            // Обробляємо текст в iframe
             this.processTextNodes(iframe.contentDocument.body);
           }
         };
@@ -205,21 +206,21 @@ window.UserVariables = {
           iframe.addEventListener('load', processIframe);
         }
       } catch (e) {
-        console.error('[UserVariables] Ошибка обработки iframe:', e);
+        console.error('[UserVariables] Помилка обробки iframe:', e);
       }
     });
   },
   
   startObserver() {
-    // Создаем MutationObserver для отслеживания изменений в DOM
+    // Створюємо MutationObserver для відстеження змін у DOM
     this.observer = new MutationObserver(mutations => {
       let hasRelevantChanges = false;
       
       mutations.forEach(mutation => {
         if (mutation.type === 'childList' && mutation.addedNodes.length) {
           mutation.addedNodes.forEach(node => {
-            if (node.nodeType === 1) { // Только элементы
-              // Проверяем, является ли элемент релевантным для Rise
+            if (node.nodeType === 1) { // Лише елементи
+              // Перевіряємо, чи є елемент релевантним для Rise
               if (
                 node.classList && (
                   node.classList.contains('rich-text-content') || 
@@ -231,10 +232,10 @@ window.UserVariables = {
                 hasRelevantChanges = true;
               }
               
-              // Обрабатываем новый элемент
+              // Обробляємо новий елемент
               this.processTextNodes(node);
               
-              // Если это iframe, обрабатываем его отдельно
+              // Якщо це iframe, обробляємо його окремо
               if (node.tagName === 'IFRAME') {
                 node.addEventListener('load', () => {
                   this.processRiseContentIframes();
@@ -243,7 +244,7 @@ window.UserVariables = {
             }
           });
         } else if (mutation.type === 'characterData') {
-          // Если изменился текст, проверяем наличие переменных
+          // Якщо змінився текст, перевіряємо наявність змінних
           const node = mutation.target;
           if (node.nodeValue && node.nodeValue.includes('%user_')) {
             hasRelevantChanges = true;
@@ -252,56 +253,56 @@ window.UserVariables = {
         }
       });
       
-      // Если были релевантные изменения, обрабатываем все Rise-элементы
+      // Якщо були релевантні зміни, обробляємо всі Rise‑елементи
       if (hasRelevantChanges) {
         this.processRiseElements();
       }
     });
     
-    // Начинаем наблюдение за всем DOM
+    // Починаємо спостереження за всім DOM
     this.observer.observe(document.body, { 
       childList: true, 
       subtree: true,
       characterData: true
     });
     
-    // Сразу проверяем и заменяем уже существующие элементы
+    // Одразу перевіряємо і замінюємо вже наявні елементи
     this.processTextNodes(document.body);
     
-    console.log("[UserVariables] Наблюдатель DOM запущен");
+    console.log("[UserVariables] Спостерігач DOM запущено");
   },
   
-  // Обработка одного текстового узла
+  // Обробка одного текстового вузла
   processTextNode(node) {
     if (!this.ready || !this.data) return;
     
     let newValue = node.nodeValue;
     
-    // Ищем все переменные формата %user_xxx%
+    // Шукаємо всі змінні формату %user_xxx%
     const matches = newValue.match(/%user_[a-z_]+%/g);
     if (matches) {
       matches.forEach(match => {
-        // Получаем имя переменной без %
+        // Отримуємо ім’я змінної без %
         const varName = match.replace(/%/g, '').replace('user_', '');
         
-        // Заменяем переменную на значение из данных
+        // Замінюємо змінну на значення з даних
         if (this.data[varName]) {
           newValue = newValue.replace(match, this.data[varName]);
         } else {
-          console.warn(`[UserVariables] Переменная ${varName} не найдена в данных`);
+          console.warn(`[UserVariables] Змінну ${varName} не знайдено в даних`);
         }
       });
       
-      // Обновляем значение узла
+      // Оновлюємо значення вузла
       node.nodeValue = newValue;
     }
   },
   
-  // Обработка всех текстовых узлов в элементе
+  // Обробка всіх текстових вузлів в елементі
   processTextNodes(rootNode) {
     if (!this.ready || !this.data || !rootNode) return;
     
-    // Получаем все текстовые узлы
+    // Отримуємо всі текстові вузли
     const walker = document.createTreeWalker(
       rootNode,
       NodeFilter.SHOW_TEXT,
@@ -309,7 +310,7 @@ window.UserVariables = {
       false
     );
     
-    // Проходим по всем текстовым узлам
+    // Проходимо всі текстові вузли
     const nodesToReplace = [];
     while (walker.nextNode()) {
       const node = walker.currentNode;
@@ -318,23 +319,23 @@ window.UserVariables = {
       }
     }
     
-    // Заменяем переменные в текстовых узлах
+    // Замінюємо змінні в текстових вузлах
     nodesToReplace.forEach(node => {
       this.processTextNode(node);
     });
   }
 };
 
-// Запускаем систему после загрузки страницы
+// Запускаємо систему після завантаження сторінки
 window.addEventListener('DOMContentLoaded', () => {
-  console.log('[UserVariables] DOM загружен, запускаю инициализацию');
+  console.log('[UserVariables] DOM завантажено, запускаю ініціалізацію');
   window.UserVariables.init();
   
-  // Дополнительно запускаем после полной загрузки страницы
+  // Додатково запускаємо після повного завантаження сторінки
   window.addEventListener('load', () => {
     setTimeout(() => {
       window.UserVariables.processRiseElements();
       window.UserVariables.processRiseContentIframes();
     }, 500);
   });
-}); 
+});
