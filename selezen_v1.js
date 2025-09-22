@@ -231,6 +231,61 @@
       this.processTextNodes(document.body);
       console.log("[UserVariables] Спостерігач DOM запущено");
     },
+
+
+    processTextNode(node) {
+      if (!this.ready || !this.data) return;
+      let val = node.nodeValue;
+      const matches = val && val.match(/%user_[a-z_]+%/gi);
+      if (!matches) return;
+
+      matches.forEach(match => {
+        const key = match.replace(/%/g, '').replace('user_', '');
+        if (this.data && this.data[key] != null) {
+          val = val.replaceAll(match, String(this.data[key]));
+        } else {
+          this._warnedVars ??= new Set();
+          if (!this._warnedVars.has(key)) {
+            this._warnedVars.add(key);
+            console.warn(`[UserVariables] Змінну ${key} не знайдено в даних`);
+          }
+        }
+      });
+
+      node.nodeValue = val;
+    },
+
+    processTextNodes(rootNode) {
+      if (!this.ready || !this.data || !rootNode) return;
+      const walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, null, false);
+      const toProcess = [];
+      while (walker.nextNode()) {
+        const n = walker.currentNode;
+        if (n.nodeValue && n.nodeValue.includes('%user_')) toProcess.push(n);
+      }
+      toProcess.forEach(n => this.processTextNode(n));
+    },
+
+    // Заміна фото користувача за alt="replace_user_img" або aria-label=«replace_user_img»
+    processUserImages(scope = document.body) {
+      if (!this.ready || !this.data) return;
+
+      const src = this.data.user_big_photo_thumb || this.data.big_photo_thumb || this.data.photo_thumb;
+      if (!src) return;
+
+      // <img alt="replace_user_img">
+      scope.querySelectorAll('img[alt="replace_user_img"]').forEach(img => {
+        if (img.src !== src) img.src = src;
+      });
+
+      // <svg aria-label="replace_user_img"> — приклад заглушки (якщо потрібно замінювати <image> всередині SVG)
+      scope.querySelectorAll('svg[aria-label="replace_user_img"] image[href], svg[aria-label="replace_user_img"] image[xlink\\:href]')
+        .forEach(im => {
+          im.setAttribute('href', src);
+          im.setAttribute('xlink:href', src);
+        });
+    },
+
     
     // Метод очищення ресурсів
     destroy() {
