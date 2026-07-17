@@ -7,9 +7,25 @@
     observer: null,
     urlCheckTimer: null,
     processTimer: null,
+    riseProcessingTimer: null,
+    initRetryTimer: null,
+    initAttempts: 0,
+    shadowObservers: new Map(),
     
     init() {
       if (this.initialized) return;
+
+      if (!this.findLMSAPI(window) && this.initAttempts < 20) {
+        if (!this.initRetryTimer) {
+          this.initAttempts += 1;
+          this.initRetryTimer = setTimeout(() => {
+            this.initRetryTimer = null;
+            this.init();
+          }, 250);
+        }
+        return;
+      }
+
       this.initialized = true;
       
       console.log('[UserVariables] Ініціалізація...');
@@ -108,9 +124,27 @@
     },
     
     initRiseSpecific() {
-      this.processRiseElements();
       this.monitorRiseRouteChanges();
-      this.processRiseContentIframes();
+      this.scheduleRiseProcessing();
+    },
+
+    scheduleRiseProcessing() {
+      if (this.riseProcessingTimer) clearTimeout(this.riseProcessingTimer);
+
+      let attempts = 0;
+      const process = () => {
+        this.processRiseElements();
+        this.processRiseContentIframes();
+        attempts += 1;
+
+        if (attempts < 12) {
+          this.riseProcessingTimer = setTimeout(process, 250);
+        } else {
+          this.riseProcessingTimer = null;
+        }
+      };
+
+      process();
     },
     
     processRiseElements() {
@@ -139,9 +173,8 @@
           // Пакетна обробка
           if (this.processTimer) clearTimeout(this.processTimer);
           this.processTimer = setTimeout(() => {
-            this.processRiseElements();
-            this.processRiseContentIframes();
-          }, 400);
+            this.scheduleRiseProcessing();
+          }, 100);
         }
       };
       
@@ -217,7 +250,7 @@
         if (needProcess) {
           if (this.processTimer) clearTimeout(this.processTimer);
           this.processTimer = setTimeout(() => {
-            this.processRiseElements();
+            this.scheduleRiseProcessing();
           }, 200);
         }
       });
@@ -258,6 +291,14 @@
       node.nodeValue = val;
     },
 
+    observeShadowRoot(rootNode) {
+      if (this.shadowObservers.has(rootNode)) return;
+
+      const observer = new MutationObserver(() => this.processTextNodes(rootNode));
+      observer.observe(rootNode, { childList: true, subtree: true, characterData: true });
+      this.shadowObservers.set(rootNode, observer);
+    },
+
     processTextNodes(rootNode) {
       if (!this.ready || !this.data || !rootNode) return;
       const walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, null, false);
@@ -270,7 +311,10 @@
 
       if (typeof rootNode.querySelectorAll === 'function') {
         rootNode.querySelectorAll('*').forEach(element => {
-          if (element.shadowRoot) this.processTextNodes(element.shadowRoot);
+          if (element.shadowRoot) {
+            this.observeShadowRoot(element.shadowRoot);
+            this.processTextNodes(element.shadowRoot);
+          }
         });
       }
     },
@@ -310,6 +354,16 @@
         clearTimeout(this.processTimer);
         this.processTimer = null;
       }
+      if (this.riseProcessingTimer) {
+        clearTimeout(this.riseProcessingTimer);
+        this.riseProcessingTimer = null;
+      }
+      if (this.initRetryTimer) {
+        clearTimeout(this.initRetryTimer);
+        this.initRetryTimer = null;
+      }
+      this.shadowObservers.forEach(observer => observer.disconnect());
+      this.shadowObservers.clear();
     }
   };
 
@@ -343,7 +397,7 @@
       setTimeout(() => window.UserVariables.init(), 500);
     }, { once: true });
     
-    setTimeout(() => window.UserVariables.init(), 8000);
+    setTimeout(() => window.UserVariables.init(), 100);
   }
 
   // Запуск
