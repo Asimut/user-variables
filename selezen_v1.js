@@ -240,14 +240,17 @@
       if (!matches) return;
 
       matches.forEach(match => {
-        const key = match.replace(/%/g, '').replace('user_', '');
-        if (this.data && this.data[key] != null) {
-          val = val.replaceAll(match, String(this.data[key]));
+        const fullKey = match.replace(/%/g, '');
+        const shortKey = fullKey.replace(/^user_/, '');
+        const value = this.data?.[fullKey] ?? this.data?.[shortKey];
+
+        if (value != null) {
+          val = val.replaceAll(match, String(value));
         } else {
           this._warnedVars ??= new Set();
-          if (!this._warnedVars.has(key)) {
-            this._warnedVars.add(key);
-            console.warn(`[UserVariables] Змінну ${key} не знайдено в даних`);
+          if (!this._warnedVars.has(fullKey)) {
+            this._warnedVars.add(fullKey);
+            console.warn(`[UserVariables] Змінну ${fullKey} не знайдено в даних`);
           }
         }
       });
@@ -264,6 +267,12 @@
         if (n.nodeValue && n.nodeValue.includes('%user_')) toProcess.push(n);
       }
       toProcess.forEach(n => this.processTextNode(n));
+
+      if (typeof rootNode.querySelectorAll === 'function') {
+        rootNode.querySelectorAll('*').forEach(element => {
+          if (element.shadowRoot) this.processTextNodes(element.shadowRoot);
+        });
+      }
     },
 
     // Заміна фото користувача за alt="replace_user_img" або aria-label=«replace_user_img»
