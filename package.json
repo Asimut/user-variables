@@ -1,0 +1,36 @@
+{
+  "name": "asimut-user-variables",
+  "version": "1.0.0",
+  "description": "Скрипт для персоналізації курсів Articulate Rise даними користувача з LMS Collaborator через SCORM API.",
+  "main": "selezen_v1.js",
+  "browser": "selezen_v1.js",
+  "files": [
+    "selezen_v1.js"
+  ],
+  "scripts": {
+    "check": "node --check selezen_v1.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Asimut/user-variables.git"
+  },
+  "homepage": "https://github.com/Asimut/user-variables#readme",
+  "bugs": {
+    "url": "https://github.com/Asimut/user-variables/issues"
+  },
+  "keywords": [
+    "lms",
+    "scorm",
+    "articulate-rise",
+    "user-variables",
+    "personalization"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "author": {
+    "name": "Oleh Selezen",
+    "url": "https://github.com/Asimut"
+  }
+}
